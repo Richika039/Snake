@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Snake Game</title>
+  <style>
+    body { margin: 0; background: #111; color: white; font-family: sans-serif; text-align: center; }
+    canvas { display: block; margin: 40px auto; border: 2px solid #fff; background: #000; }
+    #score, #lives { margin: 5px; font-size: 18px; }
+    #menu {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.8); display: flex;
+      flex-direction: column; justify-content: center;
+      align-items: center; z-index: 10;
+    }
+    #menu button { margin: 10px; padding: 10px 25px; font-size: 18px; cursor: pointer; }
+  </style>
+</head>
+<body>
+
+  <div id="menu">
+    <h1>🐍 Snake Game</h1>
+    <button onclick="startGame()">▶️ Démarrer</button>
+    <button onclick="stopGame()">⏹️ Arrêter</button>
+  </div>
+
+  <div id="score">Score : 0</div>
+  <div id="lives">Vies : 5</div>
+  <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const box = 20, canvasSize = 400, maxCells = canvasSize / box;
+
+    let snake, direction, food, score, lives;
+    let gameRunning = false;
+
+    document.addEventListener('keydown', changeDirection);
+
+    function changeDirection(e) {
+      const key = e.key;
+      if (key === 'ArrowUp' && direction !== 'DOWN') direction = 'UP';
+      else if (key === 'ArrowDown' && direction !== 'UP') direction = 'DOWN';
+      else if (key === 'ArrowLeft' && direction !== 'RIGHT') direction = 'LEFT';
+      else if (key === 'ArrowRight' && direction !== 'LEFT') direction = 'RIGHT';
+    }
+
+    function spawnFood(){
+      return { x: Math.floor(Math.random()*maxCells)*box, y: Math.floor(Math.random()*maxCells)*box };
+    }
+
+    function updateScore(){ document.getElementById('score').innerText = 'Score : ' + score; }
+    function updateLives(){ document.getElementById('lives').innerText = 'Vies : ' + lives; }
+
+    function initGame(){
+      snake = [{ x: 10*box, y: 10*box }];
+      direction = 'RIGHT';
+      food = spawnFood();
+      score = 0;
+      lives = 5;
+      updateScore();
+      updateLives();
+    }
+
+    function draw(){
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = 'red';
+      ctx.fillRect(food.x, food.y, box, box);
+
+      let head = { x: snake[0].x, y: snake[0].y };
+      if (direction === 'UP') head.y -= box;
+      else if (direction === 'DOWN') head.y += box;
+      else if (direction === 'LEFT') head.x -= box;
+      else if (direction === 'RIGHT') head.x += box;
+
+      if (head.x<0 || head.x>=canvas.width || head.y<0 || head.y>=canvas.height || isCollision(head)){
+        lives--; updateLives(); score = 0; updateScore();
+        if (lives <= 0){
+          alert('Game Over ! Ton score final : ' + score);
+          stopGame();
+          return;
+        } else {
+          snake = [{ x: 10*box, y: 10*box }];
+          direction = 'RIGHT';
+          return;
+        }
+      }
+
+      snake.unshift(head);
+      if (head.x === food.x && head.y === food.y){
+        score++; updateScore(); food = spawnFood();
+      } else {
+        snake.pop();
+      }
+
+      snake.forEach((seg, index) => {
+        ctx.fillStyle = index === 0 ? 'lime' : 'green';
+        ctx.fillRect(seg.x, seg.y, box, box);
+      });
+    }
+
+    function isCollision(head){
+      for (let i = 1; i < snake.length; i++){
+        if (head.x === snake[i].x && head.y === snake[i].y) return true;
+      }
+      return false;
+    }
+
+    let lastTime = 0, delay = 200;
+    function loop(timestamp){
+      requestAnimationFrame(loop);
+      if (!gameRunning) return;
+      if (timestamp - lastTime < delay) return;
+      lastTime = timestamp;
+      draw();
+    }
+    requestAnimationFrame(loop);
+
+    function startGame(){
+      initGame();
+      gameRunning = true;
+      document.getElementById('menu').style.display = 'none';
+    }
+
+    function stopGame(){
+      gameRunning = false;
+      document.getElementById('menu').style.display = 'flex';
+    }
+  </script>
+
+</body>
+</html>
